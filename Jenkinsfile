@@ -1,24 +1,44 @@
 pipeline {
     agent any
 
+    environment {
+        NEXUS_URL = "localhost:5050"
+        IMAGE_NAME = "hello-docker"
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                git branch: 'main', url: 'https://github.com/a46002485-cyber/hello-docker.git'
+                checkout([$class: 'GitSCM',
+                          branches: [[name: '*/main']],
+                          userRemoteConfigs: [[url: 'https://github.com/a46002485-cyber/hello-docker.git', credentialsId: '3b9c1404-85ad-4cea-98df-165818e43614']]
+                ])
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t hello-docker .'
+                sh "docker build -t ${IMAGE_NAME} ."
             }
         }
 
         stage('Push to Nexus') {
             steps {
-                sh 'docker tag hello-docker localhost:8081/repository/khedr22_9/hello-docker:latest'
-                sh 'docker push localhost:8081/repository/khedr22_9/hello-docker:latest'
+                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    sh "docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_URL"
+                    sh "docker tag ${IMAGE_NAME} $NEXUS_URL/${IMAGE_NAME}:latest"
+                    sh "docker push $NEXUS_URL/${IMAGE_NAME}:latest"
+                }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build and push completed successfully!'
+        }
+        failure {
+            echo 'Build failed. Check logs!'
         }
     }
 }
