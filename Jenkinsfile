@@ -16,8 +16,8 @@ pipeline {
 
         stage('Push to Nexus') {
             steps {
-                sh 'docker tag hello-docker localhost:5000/hello-docker:latest'
-                sh 'docker push localhost:5000/hello-docker:latest'
+                sh 'docker tag hello-docker localhost:8081/repository/khedr22_9/hello-docker:latest'
+                sh 'docker push localhost:8081/repository/khedr22_9/hello-docker:latest'
             }
         }
     }
